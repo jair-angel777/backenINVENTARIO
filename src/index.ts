@@ -36,7 +36,7 @@ app.get('/api/products', async (req: Request, res: Response) => {
 // GET /api/products/:id
 app.get('/api/products/:id', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const product = await prisma.productos.findUnique({
             where: { id: id }
         });
@@ -78,7 +78,7 @@ app.post('/api/products', async (req: Request, res: Response) => {
 // PATCH /api/products/:id
 app.patch('/api/products/:id', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const body = req.body;
         const product = await prisma.productos.update({
             where: { id: id },
@@ -104,7 +104,7 @@ app.patch('/api/products/:id', async (req: Request, res: Response) => {
 // DELETE /api/products/:id
 app.delete('/api/products/:id', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         await prisma.productos.delete({
             where: { id: id }
         });
@@ -125,6 +125,11 @@ app.get('/api/debug/test-db', async (req: Request, res: Response) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
-});
+// Export for Vercel
+export default app;
+
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
+    });
+}
