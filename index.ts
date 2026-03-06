@@ -272,17 +272,44 @@ app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
         const id = req.params.id as string;
         const { estado } = req.body;
 
-        const updatedOrder = await prisma.orden_compra.update({
-            where: { id: id },
-            data: {
-                estado: estado // COMPLETADO, PENDIENTE, CANCELADO
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Obtener el pedido actual con sus detalles
+            const order = await tx.orden_compra.findUnique({
+                where: { id: id },
+                include: { detalles: true }
+            });
+
+            if (!order) {
+                throw new Error('Pedido no encontrado');
             }
+
+            // 2. Incrementar stock solo si el estado cambia a COMPLETADO y no lo estaba ya
+            if (estado === 'COMPLETADO' && order.estado !== 'COMPLETADO') {
+                for (const item of order.detalles) {
+                    await tx.productos.update({
+                        where: { id: item.producto_id },
+                        data: {
+                            stock: {
+                                increment: item.cantidad
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 3. Actualizar el estado del pedido
+            return await tx.orden_compra.update({
+                where: { id: id },
+                data: {
+                    estado: estado // COMPLETADO, PENDIENTE, CANCELADO
+                }
+            });
         });
 
-        res.json(updatedOrder);
-    } catch (error) {
+        res.json(result);
+    } catch (error: any) {
         console.error('Error updating order status:', error);
-        res.status(500).json({ error: 'Error al actualizar el estado del pedido' });
+        res.status(500).json({ error: error.message || 'Error al actualizar el estado del pedido' });
     }
 });
 
