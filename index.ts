@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, Router } from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
@@ -11,106 +11,70 @@ const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors({
-    origin: '*', // En un entorno real, restringe esto a http://localhost:3000 o el dominio de tu frontend
+    origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 app.use(express.json());
 
-// --- ROUTES ---
+// --- API ROUTER ---
+const api = Router();
 
-// --- ROUTES EMPLEADOS ---
-
-// GET /api/employees
-app.get('/api/employees', async (req: Request, res: Response) => {
+// EMPLEADOS
+api.get('/employees', async (req: Request, res: Response) => {
     try {
-        const employees = await prisma.empleado.findMany({
-            orderBy: {
-                nombre: 'asc'
-            }
-        });
+        const employees = await prisma.empleado.findMany({ orderBy: { nombre: 'asc' } });
         res.json(employees);
     } catch (error) {
-        console.error('Error fetching employees:', error);
-        res.status(500).json({ error: 'Error al obtener los empleados' });
+        res.status(500).json({ error: 'Error al obtener empleados' });
     }
 });
 
-// POST /api/employees
-app.post('/api/employees', async (req: Request, res: Response) => {
+api.post('/employees', async (req: Request, res: Response) => {
     try {
-        const body = req.body;
-        const employee = await prisma.empleado.create({
-            data: {
-                nombre: body.nombre,
-                dni: body.dni,
-                cargo: body.cargo,
-                telefono: body.telefono,
-                email: body.email
-            }
-        });
+        const employee = await prisma.empleado.create({ data: req.body });
         res.status(201).json(employee);
     } catch (error) {
-        console.error('Error creating employee:', error);
-        res.status(500).json({ error: 'Error al registrar al empleado' });
+        res.status(500).json({ error: 'Error al crear empleado' });
     }
 });
 
-// PATCH /api/employees/:id
-app.patch('/api/employees/:id', async (req: Request, res: Response) => {
+api.patch('/employees/:id', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
-        const body = req.body;
         const employee = await prisma.empleado.update({
-            where: { id: id },
-            data: body
+            where: { id: req.params.id },
+            data: req.body
         });
         res.json(employee);
     } catch (error) {
-        console.error('Error updating employee:', error);
-        res.status(500).json({ error: 'Error al actualizar al empleado' });
+        res.status(500).json({ error: 'Error al actualizar empleado' });
     }
 });
 
-// --- ROUTES USUARIOS ---
-
-// GET /api/users
-app.get('/api/users', async (req: Request, res: Response) => {
+// USUARIOS
+api.get('/users', async (req: Request, res: Response) => {
     try {
         const users = await prisma.usuario.findMany({
-            orderBy: {
-                fecha_creacion: 'desc'
-            }
+            select: { id: true, username: true, rol: true, empleado_id: true, fecha_creacion: true, ultimo_acceso: true }
         });
-        // Ocultar contraseñas en la respuesta
-        const safeUsers = users.map(u => {
-            const { password, ...safe } = u;
-            return safe;
-        });
-        res.json(safeUsers);
+        res.json(users);
     } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).json({ error: 'Error al obtener los usuarios' });
+        res.status(500).json({ error: 'Error al obtener usuarios' });
     }
 });
 
-// POST /api/users
-app.post('/api/users', async (req: Request, res: Response) => {
+api.post('/users', async (req: Request, res: Response) => {
     try {
-        const user = await prisma.usuario.create({
-            data: req.body
-        });
+        const user = await prisma.usuario.create({ data: req.body });
         res.status(201).json(user);
     } catch (error) {
         res.status(500).json({ error: 'Error al crear usuario' });
     }
 });
 
-// PATCH /api/users/:id
-app.patch('/api/users/:id', async (req: Request, res: Response) => {
+api.patch('/users/:id', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
         const user = await prisma.usuario.update({
-            where: { id: id },
+            where: { id: req.params.id },
             data: req.body
         });
         res.json(user);
@@ -119,227 +83,109 @@ app.patch('/api/users/:id', async (req: Request, res: Response) => {
     }
 });
 
-// --- PRODUCT ROUTES ---
-
-// GET /api/products
-app.get('/api/products', async (req: Request, res: Response) => {
+// PRODUCTOS
+api.get('/products', async (req: Request, res: Response) => {
     try {
-        const products = await prisma.productos.findMany({
-            orderBy: {
-                fecha_creacion: 'desc'
-            }
-        });
+        const products = await prisma.productos.findMany({ orderBy: { fecha_creacion: 'desc' } });
         res.json(products);
     } catch (error) {
-        console.error('Error fetching products:', error);
-        res.status(500).json({ error: 'Error al obtener los productos' });
+        res.status(500).json({ error: 'Error al obtener productos' });
     }
 });
 
-// GET /api/products/:id
-app.get('/api/products/:id', async (req: Request, res: Response) => {
+api.get('/products/:id', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
-        const product = await prisma.productos.findUnique({
-            where: { id: id }
-        });
-
-        if (!product) {
-            return res.status(404).json({ error: 'Producto no encontrado' });
-        }
-
+        const product = await prisma.productos.findUnique({ where: { id: req.params.id } });
+        if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
         res.json(product);
     } catch (error) {
-        console.error('Error fetching product:', error);
         res.status(500).json({ error: 'Error al obtener el producto' });
     }
 });
 
-// POST /api/products
-app.post('/api/products', async (req: Request, res: Response) => {
+api.post('/products', async (req: Request, res: Response) => {
     try {
-        const body = req.body;
-        const product = await prisma.productos.create({
-            data: {
-                nombre: body.nombre,
-                categoria: body.categoria,
-                precio: body.precio,
-                costo: body.costo,
-                stock: body.stock,
-                stock_minimo: body.stock_minimo,
-                sku: body.sku,
-                imagen: body.imagen,
-                proveedor_id: body.proveedor_id
-            }
-        });
+        const product = await prisma.productos.create({ data: req.body });
         res.status(201).json(product);
     } catch (error) {
-        console.error('Error creating product:', error);
-        res.status(500).json({ error: 'Error al crear el producto' });
+        res.status(500).json({ error: 'Error al crear producto' });
     }
 });
 
-// PATCH /api/products/:id
-app.patch('/api/products/:id', async (req: Request, res: Response) => {
+api.patch('/products/:id', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
-        const body = req.body;
         const product = await prisma.productos.update({
-            where: { id: id },
-            data: {
-                nombre: body.nombre,
-                categoria: body.categoria,
-                precio: body.precio,
-                costo: body.costo,
-                stock: body.stock,
-                stock_minimo: body.stock_minimo,
-                sku: body.sku,
-                imagen: body.imagen,
-                proveedor_id: body.proveedor_id,
-                fecha_actualizacion: new Date()
-            }
+            where: { id: req.params.id },
+            data: { ...req.body, fecha_actualizacion: new Date() }
         });
         res.json(product);
     } catch (error) {
-        console.error('Error updating product:', error);
-        res.status(500).json({ error: 'Error al actualizar el producto' });
+        res.status(500).json({ error: 'Error al actualizar producto' });
     }
 });
 
-// DELETE /api/products/:id
-app.delete('/api/products/:id', async (req: Request, res: Response) => {
+api.delete('/products/:id', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
-        await prisma.productos.delete({
-            where: { id: id }
-        });
-        res.json({ message: 'Producto eliminado correctamente' });
+        await prisma.productos.delete({ where: { id: req.params.id } });
+        res.json({ message: 'Producto eliminado' });
     } catch (error) {
-        console.error('Error deleting product:', error);
-        res.status(500).json({ error: 'Error al eliminar el producto' });
+        res.status(500).json({ error: 'Error al eliminar producto' });
     }
 });
 
-// --- ROUTES PROVEEDORES ---
-
-// GET /api/suppliers
-app.get('/api/suppliers', async (req: Request, res: Response) => {
+// PROVEEDORES
+api.get('/suppliers', async (req: Request, res: Response) => {
     try {
-        const suppliers = await prisma.proveedores.findMany({
-            orderBy: {
-                fecha_creacion: 'desc'
-            }
-        });
+        const suppliers = await prisma.proveedores.findMany({ orderBy: { fecha_creacion: 'desc' } });
         res.json(suppliers);
     } catch (error) {
-        console.error('Error fetching suppliers:', error);
-        res.status(500).json({ error: 'Error al obtener los proveedores' });
+        res.status(500).json({ error: 'Error al obtener proveedores' });
     }
 });
 
-// GET /api/suppliers/:id
-app.get('/api/suppliers/:id', async (req: Request, res: Response) => {
+api.post('/suppliers', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
-        const supplier = await prisma.proveedores.findUnique({
-            where: { id: id }
-        });
-
-        if (!supplier) {
-            return res.status(404).json({ error: 'Proveedor no encontrado' });
-        }
-
-        res.json(supplier);
-    } catch (error) {
-        console.error('Error fetching supplier:', error);
-        res.status(500).json({ error: 'Error al obtener el proveedor' });
-    }
-});
-
-// POST /api/suppliers
-app.post('/api/suppliers', async (req: Request, res: Response) => {
-    try {
-        const body = req.body;
-        const supplier = await prisma.proveedores.create({
-            data: {
-                nombre: body.nombre,
-                email: body.email,
-                telefono: body.telefono,
-                direccion: body.direccion,
-                categoria: body.categoria,
-                notas: body.notas
-            }
-        });
+        const supplier = await prisma.proveedores.create({ data: req.body });
         res.status(201).json(supplier);
     } catch (error) {
-        console.error('Error creating supplier:', error);
-        res.status(500).json({ error: 'Error al crear el proveedor' });
+        res.status(500).json({ error: 'Error al crear proveedor' });
     }
 });
 
-// PATCH /api/suppliers/:id
-app.patch('/api/suppliers/:id', async (req: Request, res: Response) => {
+api.patch('/suppliers/:id', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
-        const body = req.body;
         const supplier = await prisma.proveedores.update({
-            where: { id: id },
-            data: {
-                nombre: body.nombre,
-                email: body.email,
-                telefono: body.telefono,
-                direccion: body.direccion,
-                categoria: body.categoria,
-                notas: body.notas
-            }
+            where: { id: req.params.id },
+            data: req.body
         });
         res.json(supplier);
     } catch (error) {
-        console.error('Error updating supplier:', error);
-        res.status(500).json({ error: 'Error al actualizar el proveedor' });
+        res.status(500).json({ error: 'Error al actualizar proveedor' });
     }
 });
 
-// DELETE /api/suppliers/:id
-app.delete('/api/suppliers/:id', async (req: Request, res: Response) => {
+api.delete('/suppliers/:id', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
-        await prisma.proveedores.delete({
-            where: { id: id }
-        });
-        res.json({ message: 'Proveedor eliminado correctamente' });
+        await prisma.proveedores.delete({ where: { id: req.params.id } });
+        res.json({ message: 'Proveedor eliminado' });
     } catch (error) {
-        console.error('Error deleting supplier:', error);
-        res.status(500).json({ error: 'Error al eliminar el proveedor' });
+        res.status(500).json({ error: 'Error al eliminar proveedor' });
     }
 });
 
-// --- ROUTES PEDIDOS (ORDERS) ---
-
-// GET /api/orders
-app.get('/api/orders', async (req: Request, res: Response) => {
+// PEDIDOS
+api.get('/orders', async (req: Request, res: Response) => {
     try {
-        const orders = await prisma.orden_compra.findMany({
-            include: {
-                detalles: true
-            },
-            orderBy: {
-                fecha: 'desc'
-            }
-        });
+        const orders = await prisma.orden_compra.findMany({ include: { detalles: true }, orderBy: { fecha: 'desc' } });
         res.json(orders);
     } catch (error) {
-        console.error('Error fetching orders:', error);
-        res.status(500).json({ error: 'Error al obtener los pedidos' });
+        res.status(500).json({ error: 'Error al obtener pedidos' });
     }
 });
 
-// POST /api/orders
-app.post('/api/orders', async (req: Request, res: Response) => {
+api.post('/orders', async (req: Request, res: Response) => {
     try {
         const { proveedor_id, subtotal, igv, total, notas, detalles } = req.body;
-
-        // Crear la orden y sus detalles en una transacción
         const newOrder = await prisma.orden_compra.create({
             data: {
                 proveedor_id,
@@ -357,72 +203,54 @@ app.post('/api/orders', async (req: Request, res: Response) => {
                     }))
                 }
             },
-            include: {
-                detalles: true
-            }
+            include: { detalles: true }
         });
-
         res.status(201).json(newOrder);
     } catch (error) {
-        console.error('Error creating order:', error);
-        res.status(500).json({ error: 'Error al crear el pedido. Revisa los logs del servidor.' });
+        res.status(500).json({ error: 'Error al crear pedido' });
     }
 });
 
-// PATCH /api/orders/:id/status
-app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
+api.patch('/orders/:id/status', async (req: Request, res: Response) => {
     try {
-        const id = req.params.id as string;
         const { estado } = req.body;
-
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Obtener el pedido actual con sus detalles
-            const order = await tx.orden_compra.findUnique({
-                where: { id: id },
-                include: { detalles: true }
-            });
-
-            if (!order) {
-                throw new Error('Pedido no encontrado');
-            }
-
-            // 2. Incrementar stock solo si el estado cambia a COMPLETADO y no lo estaba ya
+            const order = await tx.orden_compra.findUnique({ where: { id: req.params.id }, include: { detalles: true } });
+            if (!order) throw new Error('Pedido no encontrado');
             if (estado === 'COMPLETADO' && order.estado !== 'COMPLETADO') {
                 for (const item of order.detalles) {
                     await tx.productos.update({
                         where: { id: item.producto_id },
-                        data: {
-                            stock: {
-                                increment: item.cantidad
-                            }
-                        }
+                        data: { stock: { increment: item.cantidad } }
                     });
                 }
             }
-
-            // 3. Actualizar el estado del pedido
-            return await tx.orden_compra.update({
-                where: { id: id },
-                data: {
-                    estado: estado // COMPLETADO, PENDIENTE, CANCELADO
-                }
-            });
+            return await tx.orden_compra.update({ where: { id: req.params.id }, data: { estado } });
         });
-
         res.json(result);
     } catch (error: any) {
-        console.error('Error updating order status:', error);
-        res.status(500).json({ error: error.message || 'Error al actualizar el estado del pedido' });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Export for Vercel
+// DEBUG
+api.get('/debug/test-db', async (req: Request, res: Response) => {
+    try {
+        const count = await prisma.productos.count();
+        res.json({ status: 'Connected', message: `Database connected. ${count} products found.` });
+    } catch (error: any) {
+        res.status(500).json({ status: 'Error', message: error.message });
+    }
+});
+
+// MOUNT ROUTER
+// Se monta en /api para Vercel y en / para fallback
+app.use('/api', api);
+app.use('/', api);
 
 // Export for Vercel
 export default app;
 
 if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
-    });
+    app.listen(PORT, () => console.log(`🚀 Backend running on http://localhost:${PORT}`));
 }
