@@ -13,7 +13,7 @@
     "rootDir": "."
   },
   "include": [
-    "api/**/*",
+    "index.ts",
     "prisma/**/*"
   ],
   "exclude": [
