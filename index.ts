@@ -83,6 +83,33 @@ api.patch('/users/:id', async (req: Request, res: Response) => {
     }
 });
 
+// AUTH
+api.post('/auth/login', async (req: Request, res: Response) => {
+    try {
+        const { username, password } = req.body;
+
+        // Buscar el usuario en la base de datos
+        const user = await prisma.usuario.findUnique({
+            where: { username: username }
+        });
+
+        if (!user || user.password !== password) {
+            return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+        }
+
+        // Éxito: Retornar info básica
+        res.json({
+            id: user.id,
+            username: user.username,
+            rol: user.rol,
+            empleado_id: user.empleado_id
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Error interno del servidor during login' });
+    }
+});
+
 // PRODUCTOS
 api.get('/products', async (req: Request, res: Response) => {
     try {
