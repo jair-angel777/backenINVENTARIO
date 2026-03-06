@@ -323,20 +323,6 @@ app.get('/api/debug/test-db', async (req: Request, res: Response) => {
     }
 });
 
-// TEMPORARY RESET ROUTE /api/reset-database
-app.get('/api/reset-database', async (req: Request, res: Response) => {
-    try {
-        console.log('🧹 Iniciando limpieza de base de datos via API...');
-        await prisma.detalle_orden.deleteMany();
-        await prisma.orden_compra.deleteMany();
-        await prisma.productos.deleteMany();
-        await prisma.proveedores.deleteMany();
-        res.json({ status: 'Success', message: 'Toda la base de datos ha sido limpiada.' });
-    } catch (error: any) {
-        res.status(500).json({ status: 'Error', message: error.message });
-    }
-});
-
 // Export for Vercel
 export default app;
 
