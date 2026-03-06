@@ -29,7 +29,7 @@ async function ensureAdmin() {
         console.error('Error en seeding:', e);
     }
 }
-ensureAdmin();
+// eliminate top-level call to ensureAdmin();
 
 // Middlewares
 app.use(cors({
@@ -75,6 +75,7 @@ api.patch('/employees/:id', async (req: Request, res: Response) => {
 // USUARIOS
 api.get('/users', async (req: Request, res: Response) => {
     try {
+        await ensureAdmin(); // Asegurar adminsitador antes de listar
         const users = await prisma.usuario.findMany({
             select: { id: true, username: true, rol: true, empleado_id: true, fecha_creacion: true, ultimo_acceso: true }
         });
@@ -108,6 +109,7 @@ api.patch('/users/:id', async (req: Request, res: Response) => {
 // AUTH
 api.post('/auth/login', async (req: Request, res: Response) => {
     try {
+        await ensureAdmin(); // Asegurar administrador justo antes de validar
         const { username, password } = req.body;
 
         // Buscar el usuario en la base de datos
