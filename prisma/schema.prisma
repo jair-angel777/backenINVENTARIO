@@ -55,3 +55,25 @@ model detalle_orden {
   subtotal        Float
   orden           orden_compra @relation(fields: [orden_id], references: [id])
 }
+
+model empleado {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  nombre          String
+  dni             String    @unique
+  cargo           String?
+  telefono        String?
+  email           String?
+  direccion       String?
+  fecha_ingreso   DateTime? @default(now())
+  estado          String    @default("ACTIVO") // ACTIVO, INACTIVO
+}
+
+model usuario {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  username        String    @unique
+  password        String
+  rol             String    @default("EMPLEADO") // GERENTE, EMPLEADO
+  empleado_id     String?   @db.ObjectId
+  fecha_creacion  DateTime? @default(now())
+  ultimo_acceso   DateTime?
+}
