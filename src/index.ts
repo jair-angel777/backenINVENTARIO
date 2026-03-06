@@ -211,6 +211,81 @@ app.delete('/api/suppliers/:id', async (req: Request, res: Response) => {
     }
 });
 
+// --- ROUTES PEDIDOS (ORDERS) ---
+
+// GET /api/orders
+app.get('/api/orders', async (req: Request, res: Response) => {
+    try {
+        const orders = await prisma.orden_compra.findMany({
+            include: {
+                detalles: true
+            },
+            orderBy: {
+                fecha: 'desc'
+            }
+        });
+        res.json(orders);
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).json({ error: 'Error al obtener los pedidos' });
+    }
+});
+
+// POST /api/orders
+app.post('/api/orders', async (req: Request, res: Response) => {
+    try {
+        const { proveedor_id, subtotal, igv, total, notas, detalles } = req.body;
+
+        // Crear la orden y sus detalles en una transacción
+        const newOrder = await prisma.orden_compra.create({
+            data: {
+                proveedor_id,
+                subtotal: subtotal || 0,
+                igv: igv || 0,
+                total: total,
+                notas,
+                detalles: {
+                    create: detalles.map((d: any) => ({
+                        producto_id: d.producto_id,
+                        nombre_producto: d.nombre_producto,
+                        cantidad: d.cantidad,
+                        costo_unitario: d.costo_unitario,
+                        subtotal: d.subtotal
+                    }))
+                }
+            },
+            include: {
+                detalles: true
+            }
+        });
+
+        res.status(201).json(newOrder);
+    } catch (error) {
+        console.error('Error creating order:', error);
+        res.status(500).json({ error: 'Error al crear el pedido. Revisa los logs del servidor.' });
+    }
+});
+
+// PATCH /api/orders/:id/status
+app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const { estado } = req.body;
+
+        const updatedOrder = await prisma.orden_compra.update({
+            where: { id: id },
+            data: {
+                estado: estado // COMPLETADO, PENDIENTE, CANCELADO
+            }
+        });
+
+        res.json(updatedOrder);
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        res.status(500).json({ error: 'Error al actualizar el estado del pedido' });
+    }
+});
+
 // TEST ROUTE /api/debug/test-db
 app.get('/api/debug/test-db', async (req: Request, res: Response) => {
     try {

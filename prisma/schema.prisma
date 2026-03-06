@@ -32,3 +32,26 @@ model proveedores {
   notas          String?
   fecha_creacion DateTime? @default(now())
 }
+
+model orden_compra {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  proveedor_id   String          @db.ObjectId
+  fecha          DateTime        @default(now())
+  subtotal       Float           @default(0)
+  igv            Float           @default(0)
+  total          Float
+  estado         String          @default("PENDIENTE") // PENDIENTE, COMPLETADO, CANCELADO
+  notas          String?
+  detalles       detalle_orden[]
+}
+
+model detalle_orden {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  orden_id        String       @db.ObjectId
+  producto_id     String       @db.ObjectId
+  nombre_producto String
+  cantidad        Int
+  costo_unitario  Float
+  subtotal        Float
+  orden           orden_compra @relation(fields: [orden_id], references: [id])
+}
