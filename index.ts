@@ -18,6 +18,109 @@ app.use(express.json());
 
 // --- ROUTES ---
 
+// --- ROUTES EMPLEADOS ---
+
+// GET /api/employees
+app.get('/api/employees', async (req: Request, res: Response) => {
+    try {
+        const employees = await prisma.empleado.findMany({
+            orderBy: {
+                nombre: 'asc'
+            }
+        });
+        res.json(employees);
+    } catch (error) {
+        console.error('Error fetching employees:', error);
+        res.status(500).json({ error: 'Error al obtener los empleados' });
+    }
+});
+
+// POST /api/employees
+app.post('/api/employees', async (req: Request, res: Response) => {
+    try {
+        const body = req.body;
+        const employee = await prisma.empleado.create({
+            data: {
+                nombre: body.nombre,
+                dni: body.dni,
+                cargo: body.cargo,
+                telefono: body.telefono,
+                email: body.email
+            }
+        });
+        res.status(201).json(employee);
+    } catch (error) {
+        console.error('Error creating employee:', error);
+        res.status(500).json({ error: 'Error al registrar al empleado' });
+    }
+});
+
+// PATCH /api/employees/:id
+app.patch('/api/employees/:id', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const body = req.body;
+        const employee = await prisma.empleado.update({
+            where: { id: id },
+            data: body
+        });
+        res.json(employee);
+    } catch (error) {
+        console.error('Error updating employee:', error);
+        res.status(500).json({ error: 'Error al actualizar al empleado' });
+    }
+});
+
+// --- ROUTES USUARIOS ---
+
+// GET /api/users
+app.get('/api/users', async (req: Request, res: Response) => {
+    try {
+        const users = await prisma.usuario.findMany({
+            orderBy: {
+                fecha_creacion: 'desc'
+            }
+        });
+        // Ocultar contraseñas en la respuesta
+        const safeUsers = users.map(u => {
+            const { password, ...safe } = u;
+            return safe;
+        });
+        res.json(safeUsers);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Error al obtener los usuarios' });
+    }
+});
+
+// POST /api/users
+app.post('/api/users', async (req: Request, res: Response) => {
+    try {
+        const user = await prisma.usuario.create({
+            data: req.body
+        });
+        res.status(201).json(user);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al crear usuario' });
+    }
+});
+
+// PATCH /api/users/:id
+app.patch('/api/users/:id', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const user = await prisma.usuario.update({
+            where: { id: id },
+            data: req.body
+        });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al actualizar usuario' });
+    }
+});
+
+// --- PRODUCT ROUTES ---
+
 // GET /api/products
 app.get('/api/products', async (req: Request, res: Response) => {
     try {
@@ -313,102 +416,7 @@ app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
     }
 });
 
-// --- ROUTES EMPLEADOS ---
-
-// GET /api/employees
-app.get('/api/employees', async (req: Request, res: Response) => {
-    try {
-        const employees = await prisma.empleado.findMany({
-            orderBy: { nombre: 'asc' }
-        });
-        res.json(employees);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al obtener empleados' });
-    }
-});
-
-// POST /api/employees
-app.post('/api/employees', async (req: Request, res: Response) => {
-    try {
-        const employee = await prisma.empleado.create({
-            data: req.body
-        });
-        res.status(201).json(employee);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al crear empleado' });
-    }
-});
-
-// PATCH /api/employees/:id
-app.patch('/api/employees/:id', async (req: Request, res: Response) => {
-    try {
-        const id = req.params.id as string;
-        const employee = await prisma.empleado.update({
-            where: { id: id },
-            data: req.body
-        });
-        res.json(employee);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar empleado' });
-    }
-});
-
-// --- ROUTES USUARIOS ---
-
-// GET /api/users
-app.get('/api/users', async (req: Request, res: Response) => {
-    try {
-        const users = await prisma.usuario.findMany({
-            select: {
-                id: true,
-                username: true,
-                rol: true,
-                empleado_id: true,
-                fecha_creacion: true,
-                ultimo_acceso: true
-            }
-        });
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al obtener usuarios' });
-    }
-});
-
-// POST /api/users
-app.post('/api/users', async (req: Request, res: Response) => {
-    try {
-        const user = await prisma.usuario.create({
-            data: req.body
-        });
-        res.status(201).json(user);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al crear usuario' });
-    }
-});
-
-// PATCH /api/users/:id
-app.patch('/api/users/:id', async (req: Request, res: Response) => {
-    try {
-        const id = req.params.id as string;
-        const user = await prisma.usuario.update({
-            where: { id: id },
-            data: req.body
-        });
-        res.json(user);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar usuario' });
-    }
-});
-
-// TEST ROUTE /api/debug/test-db
-app.get('/api/debug/test-db', async (req: Request, res: Response) => {
-    try {
-        const count = await prisma.productos.count();
-        res.json({ status: 'Connected', message: `Database connected. ${count} products found.` });
-    } catch (error: any) {
-        res.status(500).json({ status: 'Error', message: error.message });
-    }
-});
+// Export for Vercel
 
 // Export for Vercel
 export default app;
