@@ -342,8 +342,9 @@ app.post('/api/employees', async (req: Request, res: Response) => {
 // PATCH /api/employees/:id
 app.patch('/api/employees/:id', async (req: Request, res: Response) => {
     try {
+        const id = req.params.id as string;
         const employee = await prisma.empleado.update({
-            where: { id: req.params.id },
+            where: { id: id },
             data: req.body
         });
         res.json(employee);
@@ -388,8 +389,9 @@ app.post('/api/users', async (req: Request, res: Response) => {
 // PATCH /api/users/:id
 app.patch('/api/users/:id', async (req: Request, res: Response) => {
     try {
+        const id = req.params.id as string;
         const user = await prisma.usuario.update({
-            where: { id: req.params.id },
+            where: { id: id },
             data: req.body
         });
         res.json(user);
