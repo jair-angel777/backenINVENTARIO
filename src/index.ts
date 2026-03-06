@@ -65,7 +65,8 @@ app.post('/api/products', async (req: Request, res: Response) => {
                 stock: body.stock,
                 stock_minimo: body.stock_minimo,
                 sku: body.sku,
-                imagen: body.imagen
+                imagen: body.imagen,
+                proveedor_id: body.proveedor_id
             }
         });
         res.status(201).json(product);
@@ -91,6 +92,7 @@ app.patch('/api/products/:id', async (req: Request, res: Response) => {
                 stock_minimo: body.stock_minimo,
                 sku: body.sku,
                 imagen: body.imagen,
+                proveedor_id: body.proveedor_id,
                 fecha_actualizacion: new Date()
             }
         });
@@ -112,6 +114,100 @@ app.delete('/api/products/:id', async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error deleting product:', error);
         res.status(500).json({ error: 'Error al eliminar el producto' });
+    }
+});
+
+// --- ROUTES PROVEEDORES ---
+
+// GET /api/suppliers
+app.get('/api/suppliers', async (req: Request, res: Response) => {
+    try {
+        const suppliers = await prisma.proveedores.findMany({
+            orderBy: {
+                fecha_creacion: 'desc'
+            }
+        });
+        res.json(suppliers);
+    } catch (error) {
+        console.error('Error fetching suppliers:', error);
+        res.status(500).json({ error: 'Error al obtener los proveedores' });
+    }
+});
+
+// GET /api/suppliers/:id
+app.get('/api/suppliers/:id', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const supplier = await prisma.proveedores.findUnique({
+            where: { id: id }
+        });
+
+        if (!supplier) {
+            return res.status(404).json({ error: 'Proveedor no encontrado' });
+        }
+
+        res.json(supplier);
+    } catch (error) {
+        console.error('Error fetching supplier:', error);
+        res.status(500).json({ error: 'Error al obtener el proveedor' });
+    }
+});
+
+// POST /api/suppliers
+app.post('/api/suppliers', async (req: Request, res: Response) => {
+    try {
+        const body = req.body;
+        const supplier = await prisma.proveedores.create({
+            data: {
+                nombre: body.nombre,
+                email: body.email,
+                telefono: body.telefono,
+                direccion: body.direccion,
+                categoria: body.categoria,
+                notas: body.notas
+            }
+        });
+        res.status(201).json(supplier);
+    } catch (error) {
+        console.error('Error creating supplier:', error);
+        res.status(500).json({ error: 'Error al crear el proveedor' });
+    }
+});
+
+// PATCH /api/suppliers/:id
+app.patch('/api/suppliers/:id', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const body = req.body;
+        const supplier = await prisma.proveedores.update({
+            where: { id: id },
+            data: {
+                nombre: body.nombre,
+                email: body.email,
+                telefono: body.telefono,
+                direccion: body.direccion,
+                categoria: body.categoria,
+                notas: body.notas
+            }
+        });
+        res.json(supplier);
+    } catch (error) {
+        console.error('Error updating supplier:', error);
+        res.status(500).json({ error: 'Error al actualizar el proveedor' });
+    }
+});
+
+// DELETE /api/suppliers/:id
+app.delete('/api/suppliers/:id', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        await prisma.proveedores.delete({
+            where: { id: id }
+        });
+        res.json({ message: 'Proveedor eliminado correctamente' });
+    } catch (error) {
+        console.error('Error deleting supplier:', error);
+        res.status(500).json({ error: 'Error al eliminar el proveedor' });
     }
 });
 

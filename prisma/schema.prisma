@@ -17,6 +17,18 @@ model productos {
   stock_minimo        Int?      @default(5)
   sku                 String?   @unique(map: "sku")
   imagen              String?
+  proveedor_id        String?   @db.ObjectId
   fecha_creacion      DateTime? @default(now())
   fecha_actualizacion DateTime? @default(now())
+}
+
+model proveedores {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  nombre         String
+  email          String?
+  telefono       String?
+  direccion      String?
+  categoria      String?
+  notas          String?
+  fecha_creacion DateTime? @default(now())
 }
