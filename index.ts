@@ -9,6 +9,28 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
+// Seed inicial para el administrador
+async function ensureAdmin() {
+    try {
+        const admin = await prisma.usuario.findUnique({
+            where: { username: 'gerente' }
+        });
+        if (!admin) {
+            await prisma.usuario.create({
+                data: {
+                    username: 'gerente',
+                    password: '123',
+                    rol: 'GERENTE'
+                }
+            });
+            console.log('🛡️ Usuario administrador autogenerado: gerente/123');
+        }
+    } catch (e) {
+        console.error('Error en seeding:', e);
+    }
+}
+ensureAdmin();
+
 // Middlewares
 app.use(cors({
     origin: '*',
