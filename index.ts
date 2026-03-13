@@ -72,6 +72,15 @@ api.patch('/employees/:id', async (req: Request, res: Response) => {
     }
 });
 
+api.delete('/employees/:id', async (req: Request, res: Response) => {
+    try {
+        await prisma.empleado.delete({ where: { id: req.params.id } });
+        res.json({ message: 'Empleado eliminado' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al eliminar empleado' });
+    }
+});
+
 // USUARIOS
 api.get('/users', async (req: Request, res: Response) => {
     try {
@@ -103,6 +112,15 @@ api.patch('/users/:id', async (req: Request, res: Response) => {
         res.json(user);
     } catch (error) {
         res.status(500).json({ error: 'Error al actualizar usuario' });
+    }
+});
+
+api.delete('/users/:id', async (req: Request, res: Response) => {
+    try {
+        await prisma.usuario.delete({ where: { id: req.params.id } });
+        res.json({ message: 'Usuario eliminado' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al eliminar usuario' });
     }
 });
 
@@ -265,7 +283,7 @@ api.post('/orders', async (req: Request, res: Response) => {
 api.patch('/orders/:id/status', async (req: Request, res: Response) => {
     try {
         const { estado } = req.body;
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: any) => {
             const order = await tx.orden_compra.findUnique({ where: { id: req.params.id }, include: { detalles: true } });
             if (!order) throw new Error('Pedido no encontrado');
             if (estado === 'COMPLETADO' && order.estado !== 'COMPLETADO') {
