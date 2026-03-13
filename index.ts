@@ -302,6 +302,59 @@ api.patch('/orders/:id/status', async (req: Request, res: Response) => {
     }
 });
 
+// VENTAS
+api.get('/sales', async (req: Request, res: Response) => {
+    try {
+        const sales = await prisma.venta.findMany({ include: { detalles: true }, orderBy: { fecha: 'desc' } });
+        res.json(sales);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener ventas' });
+    }
+});
+
+api.post('/sales', async (req: Request, res: Response) => {
+    try {
+        const { cliente_nombre, total, metodo_pago, detalles } = req.body;
+        const result = await prisma.$transaction(async (tx: any) => {
+            // 1. Crear la venta
+            const newSale = await tx.venta.create({
+                data: {
+                    cliente_nombre,
+                    total,
+                    metodo_pago,
+                    detalles: {
+                        create: detalles.map((d: any) => ({
+                            producto_id: d.producto_id,
+                            nombre_producto: d.nombre_producto,
+                            cantidad: d.cantidad,
+                            precio_unitario: d.precio_unitario,
+                            subtotal: d.subtotal
+                        }))
+                    }
+                },
+                include: { detalles: true }
+            });
+
+            // 2. Decrementar stock por cada producto
+            for (const item of detalles) {
+                const product = await tx.productos.findUnique({ where: { id: item.producto_id } });
+                if (!product) throw new Error(`Producto ${item.nombre_producto} no encontrado`);
+                if (product.stock < item.cantidad) throw new Error(`Stock insuficiente para ${item.nombre_producto}`);
+
+                await tx.productos.update({
+                    where: { id: item.producto_id },
+                    data: { stock: { decrement: item.cantidad } }
+                });
+            }
+
+            return newSale;
+        });
+        res.status(201).json(result);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // DEBUG
 api.get('/debug/test-db', async (req: Request, res: Response) => {
     try {

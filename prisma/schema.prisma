@@ -77,3 +77,22 @@ model usuario {
   fecha_creacion  DateTime? @default(now())
   ultimo_acceso   DateTime?
 }
+model venta {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  fecha           DateTime        @default(now())
+  cliente_nombre  String?
+  total           Float
+  metodo_pago     String?         // EFECTIVO, TARJETA, TRANSFERENCIA
+  detalles        detalle_venta[]
+}
+
+model detalle_venta {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  venta_id        String   @db.ObjectId
+  producto_id     String   @db.ObjectId
+  nombre_producto String
+  cantidad        Int
+  precio_unitario Float
+  subtotal        Float
+  venta           venta    @relation(fields: [venta_id], references: [id])
+}
